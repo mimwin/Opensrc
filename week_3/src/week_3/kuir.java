@@ -27,7 +27,7 @@ public class kuir {
 			 keyword.ExtractKeyword(args[1]); 
 		 }
 		 else if(args[0].contentEquals("-i")) {
-			makeInvert in = new makeInvert();
+			indexer in = new indexer();
 			in.Invert(args[1]);
 		 }
 	}

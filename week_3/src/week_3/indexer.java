@@ -24,7 +24,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-public class makeInvert {
+public class indexer {
 	
 	public void Invert(String path) throws IOException, ParserConfigurationException, SAXException, ClassNotFoundException {
 		FileOutputStream filestream = new FileOutputStream("index.post");
@@ -78,8 +78,8 @@ public class makeInvert {
 				String[] a = token.get(i);
 				String []id_weight = a[j].split(":");
 				
-				//List for keyMap value
-				List<String> list = Arrays.asList(new String[] {"0","0","1","0","2","0","3","0","4","0"});
+				//Vector for keyMap value
+				Vector<Double> v = new Vector<Double>();
 				
 				// keyword
 				String id = id_weight[0];
@@ -92,9 +92,10 @@ public class makeInvert {
 				//TF
 				int weight = Integer.parseInt(id_weight[1]);
 				
-				//가중치 -> List
-				double W = weight * Math.log10(5.0/cnt);
-				list.set(i*2+1,Double.toString(W));
+				//가중치 -> Vector
+				double W = weight * Math.log(5.0/cnt);
+				v.add((double) i);
+				v.add(Math.round(W*100)/100.0);
 
 				
 				//If IDF>1, update value
@@ -114,21 +115,19 @@ public class makeInvert {
 							String[] str = b[n].split(":");
 							if(id.equals(str[0])) {
 								int w = Integer.parseInt(str[1]);
-								W = w * Math.log10(5.0/cnt);
-								list.set(k*2+1,Double.toString(W));
+								W = w * Math.log(5.0/cnt);
+								v.add((double)k);
+								v.add(Math.round(W*100)/100.0);
 							}
 						}
 					}
 				}
 				
 				// List -> HashMap value
-				String value ="[ ";
-				for(int k=0;k<list.size();k+=2) {
-					value+=list.get(k)+" "+list.get(k+1);
-					if(k!=list.size()-2)value+=", ";
+				String value ="";
+				for(int k=0;k<v.size();k+=2) {
+					value+=Math.round(v.get(k))+" "+v.get(k+1)+" ";
 				}
-				value +=" ]";
-				
 				keyMap.put(id, value);
 			}
 
