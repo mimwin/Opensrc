@@ -142,7 +142,7 @@ public class indexer {
 	}
 	
 	public void printPost() throws IOException, ClassNotFoundException {
-		FileInputStream filestream = new FileInputStream("C:\\Users\\kms10\\Desktop\\gitstudy\\week_3\\index.post");
+		FileInputStream filestream = new FileInputStream(".\\index.post");
 		ObjectInputStream objectInputStream = new ObjectInputStream(filestream);
 		
 		Object object = objectInputStream.readObject();
