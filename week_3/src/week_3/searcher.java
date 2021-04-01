@@ -1,0 +1,158 @@
+package week_3;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Vector;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.snu.ids.kkma.index.Keyword;
+import org.snu.ids.kkma.index.KeywordExtractor;
+import org.snu.ids.kkma.index.KeywordList;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
+
+public class searcher {
+	
+	//hashmap = index.post keyword
+	HashMap<String,String> hashmap = new HashMap();
+	
+	//kkmaMap = Query keyword
+	HashMap<String,Integer> kkmaMap = new HashMap();
+	
+	//Calculate & Ranking
+	HashMap<Integer,Double> Cal = new HashMap();
+
+	public void featuring(String path,String query) throws ClassNotFoundException, IOException, SAXException, ParserConfigurationException {
+		
+		//get query & Parsing using kkma
+		KeywordExtractor ke = new KeywordExtractor();
+		String KeywordString = "";
+		System.out.println(query);
+		KeywordList kl = ke.extractKeyword(query, true);
+		
+		for (int k = 0; k < kl.size(); k++) {
+			Keyword kwrd = kl.get(k);
+			kkmaMap.put(kwrd.getString(), kwrd.getCnt());
+		}
+		
+		//Get index.post
+		getPost(path);
+		
+		//Calculate
+		CalcSim();
+		
+		//find title base on ranking
+		findTitle();
+		
+	}
+	
+	public void getPost(String path) throws IOException, ClassNotFoundException {
+		
+		FileInputStream filestream = new FileInputStream(path);
+		ObjectInputStream objectInputStream = new ObjectInputStream(filestream);
+		
+		Object object = objectInputStream.readObject();
+		objectInputStream.close();
+		
+		hashmap = (HashMap)object;
+		
+	}
+	
+	public void CalcSim() {
+		
+		for(int i=0;i<5;i++) Cal.put(i,0.0);
+		
+		Iterator it = kkmaMap.keySet().iterator();
+		int cnt = 0;
+		
+		while(it.hasNext()) {
+			
+			String key = (String)it.next();
+			double sum = 0.0;
+			
+			if(hashmap.containsKey(key)) {
+				int w = kkmaMap.get(key);
+				String[] tok = hashmap.get(key).split(" ");
+				
+				for(int i=0;i<tok.length;i++) { 
+				
+					System.out.println("w : "+w+" tok[i+1] : "+tok[i+1]+"tok[i] : "+tok[i]);
+					sum+=w*Double.parseDouble(tok[i+1])+Cal.get(Integer.parseInt(tok[i]));
+					System.out.println(sum);
+					Cal.put(Integer.parseInt(tok[i++]),sum);
+					
+				}
+			}
+		}
+
+	}
+	
+	public void findTitle() throws SAXException, IOException, ParserConfigurationException {
+		
+		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+		Document Xml = docBuilder.parse(".\\collections.xml");
+		Element root = Xml.getDocumentElement();
+		
+		// value 값 내림차순 정렬
+		List<Double> valueList = new ArrayList<>(Cal.values());
+		valueList.sort(Double::compareTo);
+		System.out.println(valueList);
+		
+		//가중치가 동일한 경우 사용되는 벡터
+		Vector<Integer> ca = new Vector<Integer>();
+
+		
+		//3위까지 collections.xml에서 title 찾아 출력
+		for(int i=4;i>1;i--) {
+			
+			//벡터 초기화
+			ca.removeAllElements();
+			
+			//가중치가 0이면 continue
+			if(valueList.get(i)==0)continue;
+			
+			for(Integer ite : Cal.keySet()) {
+				if(valueList.get(i).equals(Cal.get(ite))) {
+					ca.add(ite);
+				}
+			}
+
+			//가중치가 중복되는 경우
+			if(ca.size()>1) {
+				
+				List<String> list = new ArrayList();
+				
+				//제목에 따라 오름차순 정렬
+				for(int j=0;j<ca.size();j++)
+					list.add(root.getElementsByTagName("title").item(ca.get(j)).getTextContent());
+				Collections.sort(list);
+				
+				for(int j=0;j<list.size();j++) {
+					if(i==1) break;
+					System.out.println(5-i+" : "+list.get(j)+" "+Math.round(valueList.get(i)*100)/100.0);
+					i--;	
+				}
+			}
+			//가중치가 중복되지 않는 경우
+			else {
+				String title = root.getElementsByTagName("title").item(ca.get(0)).getTextContent();
+				System.out.println(5-i+" : "+title+" "+Math.round(valueList.get(i)*100)/100.0);
+			}
+		}
+
+	}
+	
+}
+
