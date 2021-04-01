@@ -38,14 +38,13 @@ public class searcher {
 		//get query & Parsing using kkma
 		KeywordExtractor ke = new KeywordExtractor();
 		String KeywordString = "";
-		System.out.println(query);
 		KeywordList kl = ke.extractKeyword(query, true);
 		
 		for (int k = 0; k < kl.size(); k++) {
 			Keyword kwrd = kl.get(k);
-			kkmaMap.put(kwrd.getString(), kwrd.getCnt());
+			kkmaMap.put(kwrd.getString(), 1);
 		}
-		
+
 		//Get index.post
 		getPost(path);
 		
@@ -84,12 +83,10 @@ public class searcher {
 			if(hashmap.containsKey(key)) {
 				int w = kkmaMap.get(key);
 				String[] tok = hashmap.get(key).split(" ");
-				
+
 				for(int i=0;i<tok.length;i++) { 
-				
-					System.out.println("w : "+w+" tok[i+1] : "+tok[i+1]+"tok[i] : "+tok[i]);
-					sum+=w*Double.parseDouble(tok[i+1])+Cal.get(Integer.parseInt(tok[i]));
-					System.out.println(sum);
+					if(i<tok.length-2 && i%2==0 && tok[i].equals(tok[i+2]))i+=2;
+					sum=w*Double.parseDouble(tok[i+1])+Cal.get(Integer.parseInt(tok[i]));
 					Cal.put(Integer.parseInt(tok[i++]),sum);
 					
 				}
@@ -108,7 +105,6 @@ public class searcher {
 		// value 값 내림차순 정렬
 		List<Double> valueList = new ArrayList<>(Cal.values());
 		valueList.sort(Double::compareTo);
-		System.out.println(valueList);
 		
 		//가중치가 동일한 경우 사용되는 벡터
 		Vector<Integer> ca = new Vector<Integer>();
