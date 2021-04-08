@@ -30,6 +30,11 @@ public class kuir {
 			indexer in = new indexer();
 			in.Invert(args[1]);
 		 }
+		 else if(args[0].contentEquals("-s") && args[2].contentEquals("-q")) {
+			 searcher feat = new searcher();
+			 feat.featuring(args[1],args[3]);
+		 }
+
 	}
 
 }
