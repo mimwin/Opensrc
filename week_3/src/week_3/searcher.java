@@ -32,7 +32,7 @@ public class searcher {
 	
 	//Calculate & Ranking
 	HashMap<Integer,Double> Cal = new HashMap();
-	
+
 	//Cosine similarity
 	HashMap<Integer,Double> cosine = new HashMap();
 	
@@ -54,7 +54,10 @@ public class searcher {
 		//Get index.post
 		getPost(path);
 		
-		//Calculate
+		//Q x id
+		InnerProduct();
+		
+		//Calculate cosine similarity
 		CalcSim();
 		
 		//find title base on ranking
@@ -74,25 +77,57 @@ public class searcher {
 		
 	}
 	
-	public void CalcSim() {
+	public void InnerProduct() {	// Q x id(i)
 		
 		for(int i=0;i<5;i++) Cal.put(i,0.0);
 		
 		Iterator it = kkmaMap.keySet().iterator();
 		int cnt = 0;
 		
+		while(it.hasNext()) {
+			
+			String key = (String)it.next();
+			double sum = 0.0;
+			
+			//Wq
+			int w = kkmaMap.get(key);
+			
+			if(hashmap.containsKey(key)) {
+				
+				String hash = hashmap.get(key).replaceAll(",", "");
+				String[] tok = hash.split(" ");
+
+				for(int i=0;i<tok.length;i++) {
+					if(i<tok.length-2 && i%2==0 && tok[i].equals(tok[i+2]))i+=2;
+					
+					//tok[i] = Wi
+					sum=w*Double.parseDouble(tok[i+1])+Cal.get(Integer.parseInt(tok[i]));
+					
+					Cal.put(Integer.parseInt(tok[i++]),sum);
+					
+				}
+			}
+		}
+	}
+	
+	public void CalcSim() {
+	
+		
+		Iterator it = kkmaMap.keySet().iterator();
+		int cnt = 0;
+
 		for(int i=0;i<5;i++) {
 			for(int j=0;j<1;j++) {
 				CoArr[i][j] = 0.0;
 			}
 		}
 		
-		double wq = 0;
-		double wi = 0;
+		double wq = 0.0;
+		double wi = 0.0;
 		
 		//Root( Wq ^ 2 )
 		wq = Math.sqrt(kkmaMap.size());
-		
+
 		while(it.hasNext()) {
 			
 			String key = (String)it.next();
@@ -104,20 +139,18 @@ public class searcher {
 			if(hashmap.containsKey(key)) {
 								
 				String hash = hashmap.get(key).replaceAll(",", "");
-				hash = hash.substring(2,hash.length()-2);
 				String[] tok = hash.split(" ");
 
 				for(int i=0;i<tok.length;i++) {
+					
 					if(i<tok.length-2 && i%2==0 && tok[i].equals(tok[i+2]))i+=2;
-					
-					//tok[i+1] = Wi 
-					sum=w*Double.parseDouble(tok[i+1])+Cal.get(Integer.parseInt(tok[i]));
-					
+										
+					//Wi^2
 					wi = Math.pow(Double.parseDouble(tok[i+1]), 2);
-					
+			
 					CoArr[Integer.parseInt(tok[i])][0] += wi;
 					
-					Cal.put(Integer.parseInt(tok[i++]),sum);
+					i++;
 				}
 			}	
 		}
@@ -125,10 +158,11 @@ public class searcher {
 			wi = Math.sqrt(CoArr[i][0]);
 			double k = Cal.get(i);
 			cosine.put(i, k/(wq*wi));
-			System.out.println(i + "  "+ k/(wq*wi));
-		}
 
+		}
 	}
+	
+
 	
 	public void findTitle() throws SAXException, IOException, ParserConfigurationException {
 		
@@ -139,21 +173,23 @@ public class searcher {
 		
 		// value 값 내림차순 정렬
 		List<Double> valueList = new ArrayList<>(cosine.values());
-		
-		System.out.println(valueList);
+
 		valueList.sort(Double::compareTo);
 		
 		//가중치가 동일한 경우 사용되는 벡터
 		Vector<Integer> ca = new Vector<Integer>();
+
 		int count = 0;
 		
 		//3위까지 collections.xml에서 title 찾아 출력
-		for(int i=4;i>=0;i--) {
+		for(int i=0;i<=4;i++) {
+
 			
 			//벡터 초기화
 			ca.removeAllElements();
 			
 			//가중치가 0이면 continue
+
 			if(valueList.get(i)==0 || valueList.get(i).isNaN())continue;
 			
 			count++;
@@ -189,6 +225,7 @@ public class searcher {
 				int h = Integer.parseInt(String.valueOf(Math.round(ca.get(0))));
 				String title = root.getElementsByTagName("title").item(h).getTextContent();
 				System.out.println(count+" : "+title+" "+Math.round(valueList.get(i)*100)/100.0);
+
 			}
 		}
 
